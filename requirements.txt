@@ -1,0 +1,23 @@
+# Core (lightweight, install everywhere)
+numpy>=1.24
+scipy>=1.10
+
+# Data ingestion + preprocessing (lightweight, talks to GWOSC)
+gwosc>=0.7
+gwpy>=3.0
+
+# Deep learning (heavier; CUDA build recommended on your GPU machine)
+torch>=2.0
+
+# Detection: matched filtering (heavy — pulls in lalsimulation via lalsuite)
+# Install separately, ideally in a dedicated venv/conda env:
+#   pip install pycbc
+# pycbc>=2.3
+
+# Parameter estimation: full Bayesian PE via nested sampling (heavy, also
+# needs lalsuite). Install separately:
+#   pip install bilby
+# bilby>=2.0
+
+# Plotting (for sanity-check visualisations, notebooks)
+matplotlib>=3.7

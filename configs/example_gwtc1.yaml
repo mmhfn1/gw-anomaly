@@ -1,0 +1,69 @@
+# example_gwtc1.yaml
+#
+# Reference configuration for a full training run against real GWOSC data
+# (GWTC-1 catalogue). This file documents reasonable starting values for
+# every stage; the scripts in scripts/ currently take these as CLI flags
+# rather than reading this file directly -- treat this as a reference for
+# what to pass, not something scripts/*.py auto-loads.
+#
+# Example translation to CLI:
+#   python scripts/build_dataset.py --source gwosc --catalog GWTC-1-confident \
+#       --detectors H1 L1 --qimage-shape 128 128 --n-background 500 \
+#       --out data/gwtc1.npz
+
+data:
+  source: gwosc
+  catalog: GWTC-1-confident          # or GWTC-2.1-confident / GWTC-3-confident
+  detectors: [H1, L1]
+  cache_dir: ./gwosc_cache
+  n_background: 500                  # background (no-event) windows for AE training
+  bg_gps_start: 1126051217.0          # O1 run start
+  bg_gps_end: 1137254417.0            # O1 run end
+
+preprocessing:
+  bandpass_low: 20.0
+  bandpass_high: 1024.0               # safe for 4096 Hz GWOSC strain (<=0.6*Nyquist)
+  whiten_fftlength: 4.0
+  qtransform_qrange: [4, 64]
+  qtransform_frange: [20, 1024]
+  qimage_shape: [128, 128]
+  backend: gwpy                       # use numpy only if GWpy is unavailable
+
+detection:
+  autoencoder:
+    latent_dim: 64
+    channels: [16, 32, 64, 128]
+    epochs: 100
+    batch_size: 64
+    learning_rate: 1.0e-3
+    threshold_percentile: 99.0        # background false-alarm control point
+  excess_power:
+    tile_freq_bins: 4
+    tile_time_bins: 4
+    significance_threshold: 1.0e-3    # empirical p-value; needs >= a few
+    # thousand background tiles via calibrate() for this resolution
+  matched_filter:
+    snr_threshold: 8.0                 # standard single-IFO SNR trigger threshold
+    approximant: IMRPhenomD
+
+classification:
+  cnn:
+    channels: [16, 32, 64, 128]
+    dropout: 0.3
+    epochs: 100
+    batch_size: 64
+    learning_rate: 1.0e-3
+  lstm:
+    downsample_factor: 8
+    hidden_size: 64
+    num_layers: 2
+    bidirectional: true
+    epochs: 100
+  parameter_estimation:
+    regression:
+      hidden_dim: 128
+      epochs: 150
+      target_names: [mass_1, mass_2, distance_mpc]
+    bilby:
+      sampler: dynesty
+      nlive: 500                       # offline follow-up only; minutes-to-hours per event
